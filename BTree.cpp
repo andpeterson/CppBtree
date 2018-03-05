@@ -4,12 +4,12 @@ class BTreeNode()
 	T *keys; //
 	int maxKeys; //the max amount of keys in each node
 	BTreeNode **children; //array of children
-	int numberOfKeys;
-	bool isLeaf;
+	int numberOfKeys; //current number of keys in node
+	bool isLeaf; //is this the last child?
 	public:
 		BTreeNode(int _t, bool _leaf); //need to do
-		void traverse();
-		void insertNotFull();
+		void traverse(); //
+		void insertNotFull(); //inserts value into child or if leaf into self
 		void splitChild();
 
 	friend class BTree;
@@ -59,6 +59,37 @@ BTreeNode::insert(int new_key){
 		}
 		else //if not full then just insert the value
 			root->insertNotFull();			
+	}
+}
+
+BTreeNode::insertNotFull(int new_key){
+	int key_i = numberOfKeys-1//iterator for iterating through keys in node
+	
+	//if this is the last child
+	if(isLeaf){
+		//Loops through the keys backwards, shifting all the keys 
+		//lower than the new_key to the right then inserting the new key
+		while(key_i >= 0 && keys[key_i] > newkey){
+			keys[key_i+1] = keys[key_i]; //shift key over
+			--key_i; //move new key down
+		}
+		keys[i+1] = new_key;
+		++numberOfKeys;
+	}
+	else{ //if not the last child (!leaf)
+		//find the child for the new key by checking the key values
+		while(key_i <= && keys[key_i] > new_key)
+			--key_i; //if key at position key_i is greater than the new key decrement key_i
+		
+		//See if the found child is full
+		if(children[key_i+1]->numberOfKeys >= maxKeys){
+			splitChild(key_i+1, children[key_i+1])
+			
+			if(keys[key_i+1] < new_key)
+				++key_i;
+		}
+		children[key_i+1]->insertNotFull(new_key);
+		
 	}
 }
 
