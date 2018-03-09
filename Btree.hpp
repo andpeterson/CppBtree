@@ -74,7 +74,7 @@ void BTree<T>::insert(T new_key){
 	else //else the tree isn't empty
 	{
 		//if root is full create a new root and split the old one
-		if(root->numberOfKeys >= maxKeys){
+		if(root->numberOfKeys >= 2*maxKeys-1){
 			//allocate a new root
 			BTreeNode<T> *newroot = new BTreeNode<T>(maxKeys, false);
 			//make the old root a child of the new root
@@ -83,9 +83,9 @@ void BTree<T>::insert(T new_key){
 			newroot->splitChild(0, root);
 			//find which child to put the new value into
 			if(newroot->keys[0] < new_key)
-				newroot->children[0]->insertNotFull(new_key); //insert into the lhs child
+				newroot->children[1]->insertNotFull(new_key); //insert into the lhs child
 			else
-				newroot->children[1]->insertNotFull(new_key); //insert into the rhs child
+				newroot->children[0]->insertNotFull(new_key); //insert into the rhs child
 			//set root to the new root
 			root = newroot;
 		}
@@ -115,11 +115,11 @@ void BTreeNode<T>::insertNotFull(T new_key){
 			--key_i; //if key at position key_i is greater than the new key decrement key_i
 		
 		//See if the found child is full
-		if(children[key_i+1]->numberOfKeys >= maxKeys){
+		if(children[key_i+1]->numberOfKeys == 2*maxKeys-1){
 			splitChild(key_i+1, children[key_i+1]);
 			
 			if(keys[key_i+1] < new_key)
-				++key_i;
+				key_i++;
 		}
 		children[key_i+1]->insertNotFull(new_key);
 	}
