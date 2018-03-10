@@ -1,63 +1,68 @@
 #include <iostream>
 
+// a sing;e node in the BTree
 template <class T>
 class BTreeNode
 {
-	T *keys; //
-	int maxKeys; //the max amount of keys in each node
+	T *keys; //values stored in the node
+	int degrees; //degree of the tree (max amount of keys = 2*degrees-1)
 	BTreeNode **children; //array of children
-	int numberOfKeys;
-	bool isLeaf;
+	int numberOfKeys; //current amount of keys in node
+	bool isLeaf; //does this node not have children
 	public:
-		BTreeNode(int _t, bool _leaf); //need to do
-		void traverse();
-		void insertNotFull(T);
-		void splitChild(int i, BTreeNode *lhsNode);
+		BTreeNode(int _degrees, bool _leaf); //A constructor
+		void traverse(); //print nodes children and itself (uses recursion)
+		void insertNotFull(T); //insert a key into a not full node
+		void splitChild(int i, BTreeNode *lhsNode); //split child and raise the middle value
+	//BTreeNode is a friend of the BTree class
 	template <class>
 	friend class BTree;
 };
 
-
+//The BTree itself
 template<class T>
 class BTree{
-	BTreeNode <T> *root;
-	int maxKeys;
+	BTreeNode <T> *root; //a pointer to the top or root node
+	int degrees; //the degree of the tree (max amount of keys in a node = 2*degrees-1)
 	public:
-		BTree(int _maxKeys)
-		{  root = nullptr;  maxKeys = _maxKeys; }
-		void traverse()
+		BTree(int _degrees) //A constructor sets the root as null and the degrees as the passed in value
+		{  root = nullptr;  degrees = _degrees; }
+		void traverse() //navigate the tree and print values in numerical order, calls the roots traverse function
 		{  if (root != nullptr) root->traverse(); }
-		void insert(T new_key);
-	private:
-		T * tree;
-	
+		void insert(T new_key); //insert anew value into the tree
 };
 
-
+//BTreeNode Constructor
+//takes and int for degrees of the node and if the node is a leaf or not
 template <typename T>
-BTreeNode<T>::BTreeNode(int _t, bool _leaf){
-	maxKeys = _t;
+BTreeNode<T>::BTreeNode(int _degrees, bool _leaf){
+	degrees = _degrees;
 	isLeaf = _leaf;
 	
-	keys = new T[2*maxKeys-1];
-	children = new BTreeNode *[2*maxKeys-1];
+	keys = new T[2*degrees-1];
+	children = new BTreeNode *[2*degrees-1];
 	
 	numberOfKeys = 0;
 }
 
+//traverse prints calls its children's traverse function and prints its own keys
 template <typename T>
 void BTreeNode<T>::traverse(){
-	int i;
+	int i; //iterator through the keys of the node
+	//loop through the keys no the node, calling the children if there are any and printing their values
 	for(i = 0; i <  numberOfKeys; ++i){
 		if(!isLeaf)
 			children[i]->traverse();
 		std::cout << " " << keys[i];
 	}
+	//if this isn't a leaf then call the last child
 	if(!isLeaf){
 		children[i]->traverse();
 	}
 }
 
+//Inserts a value into the BTree
+//takes a value with a same type as the tree
 template <typename T>
 void BTree<T>::insert(T new_key){
 	//if root is equal to nullptr and tree is empty we will allocate 
@@ -65,7 +70,7 @@ void BTree<T>::insert(T new_key){
 	if(root == nullptr)
 	{
 		//create root node
-		root = new BTreeNode<T>(maxKeys, true);
+		root = new BTreeNode<T>(degrees, true);
 		//give the first key in root the new key
 		root->keys[0] = new_key;
 		//set the number of keys in root to 1	
@@ -74,9 +79,9 @@ void BTree<T>::insert(T new_key){
 	else //else the tree isn't empty
 	{
 		//if root is full create a new root and split the old one
-		if(root->numberOfKeys >= 2*maxKeys-1){
+		if(root->numberOfKeys >= 2*degrees-1){
 			//allocate a new root
-			BTreeNode<T> *newroot = new BTreeNode<T>(maxKeys, false);
+			BTreeNode<T> *newroot = new BTreeNode<T>(degrees, false);
 			//make the old root a child of the new root
 			newroot->children[0] = root;
 			//split the old root (raising the middle value)
@@ -94,6 +99,9 @@ void BTree<T>::insert(T new_key){
 	}
 }
 
+//Inserts a value into the node, expecting the node to not be full
+//takes a new_key to be inserted into the node
+//if the child node turns out to be full it will split the child and take its middle key
 template <typename T>
 void BTreeNode<T>::insertNotFull(T new_key){
 	int key_i = numberOfKeys-1;//iterator for iterating through keys in node
@@ -114,37 +122,40 @@ void BTreeNode<T>::insertNotFull(T new_key){
 		while(key_i <= 0 && keys[key_i] > new_key)
 			--key_i; //if key at position key_i is greater than the new key decrement key_i
 		
-		//See if the found child is full
-		if(children[key_i+1]->numberOfKeys == 2*maxKeys-1){
+		//See if the found child is full if so split the child
+		if(children[key_i+1]->numberOfKeys == 2*degrees-1){
 			splitChild(key_i+1, children[key_i+1]);
 			
 			if(keys[key_i+1] < new_key)
 				key_i++;
 		}
+		//insert the key into the child
 		children[key_i+1]->insertNotFull(new_key);
 	}
 }
 
+//split the the node passed in into two seperate nodes and raise the middle key
+//keeping the lower values on the lhs Node and the higher values on the rhs Node
 template <typename T>
 void BTreeNode<T>::splitChild(int i, BTreeNode *lhsNode){
-	// Create a new node which is going to store (t-1) keys
-    // of y
-    BTreeNode *rhsNode = new BTreeNode<T>(lhsNode->maxKeys, lhsNode->isLeaf);
-    rhsNode->numberOfKeys = maxKeys - 1;
+	// Create a new node which is going to store (degrees-1) keys
+    // of lhsNode
+    BTreeNode *rhsNode = new BTreeNode<T>(lhsNode->degrees, lhsNode->isLeaf);
+    rhsNode->numberOfKeys = degrees - 1;
  
-    // Copy the last (t-1) keys of y to z
-    for (int j = 0; j < maxKeys-1; j++)
-        rhsNode->keys[j] = lhsNode->keys[j+maxKeys];
+    // Copy the last (degrees-1) keys of lhs to rhs
+    for (int j = 0; j < degrees-1; j++)
+        rhsNode->keys[j] = lhsNode->keys[j+degrees];
  
-    // Copy the last t children of y to z
+    // Copy the last degrees children of lhs to rhs
     if (lhsNode->isLeaf == false)
     {
-        for (int j = 0; j < maxKeys; j++)
-            rhsNode->children[j] = lhsNode->children[j+maxKeys];
+        for (int j = 0; j < degrees; j++)
+            rhsNode->children[j] = lhsNode->children[j+degrees];
     }
  
-    // Reduce the number of keys in y
-    lhsNode->numberOfKeys = maxKeys - 1;
+    // Reduce the number of keys in lhs
+    lhsNode->numberOfKeys = degrees - 1;
  
     // Since this node is going to have a new child,
     // create space of new child
@@ -154,13 +165,13 @@ void BTreeNode<T>::splitChild(int i, BTreeNode *lhsNode){
     // Link the new child to this node
     children[i+1] = rhsNode;
  
-    // A key of y will move to this node. Find location of
+    // A key of lhs will move to this node. Find location of
     // new key and move all greater keys one space ahead
     for (int j = numberOfKeys-1; j >= i; j--)
         keys[j+1] = keys[j];
  
-    // Copy the middle key of y to this node
-    keys[i] = lhsNode->keys[maxKeys-1];
+    // Copy the middle key of lhs to this node
+    keys[i] = lhsNode->keys[degrees-1];
  
     // Increment count of keys in this node
     numberOfKeys = numberOfKeys + 1;
